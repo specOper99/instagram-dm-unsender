@@ -5,27 +5,27 @@ import { findMessagesWrapper, loadMoreMessages, getFirstVisibleMessage, getMessa
 test("getFirstVisibleMessage", async t => {
 	const messageElement = createMessageElement(t.context.document, "Test")
 	t.context.mountElement.append(messageElement)
-	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController(), t.context.window), undefined)
+	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController()), undefined)
 })
 
 test("getFirstVisibleMessage visible", async t => {
 	const messageElement = createMessageElement(t.context.document, "Test")
 	t.context.mountElement.append(messageElement)
 	messageElement.getBoundingClientRect = () => ({ y: 105, height: 50 })
-	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController(), t.context.window), messageElement)
+	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController()), messageElement)
 })
 
 test("getFirstVisibleMessage ignore if already processed", async t => {
 	const messageElement = createMessageElement(t.context.document, "Test", true, true)
 	t.context.mountElement.append(messageElement)
-	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController(), t.context.window), undefined)
+	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController()), undefined)
 })
 
 test("getFirstVisibleMessage includes messages sent by someone else", async t => {
-	const messageElement = createMessageElement(t.context.document, "Test", false, true)
+	const messageElement = createMessageElement(t.context.document, "Test", false, false)
 	t.context.mountElement.append(messageElement)
 	messageElement.getBoundingClientRect = () => ({ y: 105, height: 50 })
-	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController(), t.context.window), messageElement)
+	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController()), messageElement)
 })
 
 test("getFirstVisibleMessage tall message partially visible", async t => {
@@ -34,7 +34,7 @@ test("getFirstVisibleMessage tall message partially visible", async t => {
 	t.context.mountElement.append(messageElement)
 	messageElement.getBoundingClientRect = () => ({ y: -200, height: 500 })
 	// Bottom edge = -200 + 500 = 300, which is > 0 so it should be found
-	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController(), t.context.window), messageElement)
+	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController()), messageElement)
 })
 
 test("getFirstVisibleMessage skips fully offscreen message", async t => {
@@ -43,7 +43,7 @@ test("getFirstVisibleMessage skips fully offscreen message", async t => {
 	t.context.mountElement.append(messageElement)
 	messageElement.getBoundingClientRect = () => ({ y: -300, height: 50 })
 	// Bottom edge = -300 + 50 = -250, which is < 0 so it should be skipped
-	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController(), t.context.window), undefined)
+	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController()), undefined)
 })
 
 test("findMessagesWrapper", t => {

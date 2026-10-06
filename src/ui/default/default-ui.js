@@ -65,7 +65,7 @@ class DefaultUI extends UI {
 		// This catches messages already visible in viewport (common for short conversations
 		// and after unsending when the DOM shrinks).
 		try {
-			const messageElement = getFirstVisibleMessage(uiMessagesWrapperRoot, abortController, this.root)
+			const messageElement = getFirstVisibleMessage(uiMessagesWrapperRoot, abortController)
 			if (messageElement) {
 				console.debug("getNextUIPIMessage: found message without scrolling")
 				const uiMessage = new UIMessage(messageElement)
@@ -105,7 +105,7 @@ class DefaultUI extends UI {
 					uiMessagesWrapperRoot.dispatchEvent(new this.root.Event("scroll"))
 					await new Promise(resolve => setTimeout(resolve, 5))
 					try {
-						const messageElement = getFirstVisibleMessage(uiMessagesWrapperRoot, abortController, this.root)
+						const messageElement = getFirstVisibleMessage(uiMessagesWrapperRoot, abortController)
 						if (messageElement) {
 							const uiMessage = new UIMessage(messageElement)
 							return new UIPIMessage(uiMessage)
@@ -136,7 +136,7 @@ class DefaultUI extends UI {
 					uiMessagesWrapperRoot.dispatchEvent(new this.root.Event("scroll"))
 					await new Promise(resolve => setTimeout(resolve, 5))
 					try {
-						const messageElement = getFirstVisibleMessage(uiMessagesWrapperRoot, abortController, this.root)
+						const messageElement = getFirstVisibleMessage(uiMessagesWrapperRoot, abortController)
 						if (messageElement) {
 							const uiMessage = new UIMessage(messageElement)
 							return new UIPIMessage(uiMessage)

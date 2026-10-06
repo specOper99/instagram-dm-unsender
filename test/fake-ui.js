@@ -145,7 +145,7 @@ export function createMessageElement(document, text="", includesUnsend=true, ign
 						element.messageActionsMenuElement.remove()
 						delete element.messageActionsMenuElement
 					} else {
-						const messageActionsMenuElement = createMessageActionsMenuElement(document, includesUnsend, eventsTimeout, includesReaction)
+						const messageActionsMenuElement = createMessageActionsMenuElement(document, includesUnsend, includesReaction)
 						messageActionsMenuElement.messageElement = element
 						element.messageActionsMenuElement = messageActionsMenuElement
 						element.ownerDocument.body.appendChild(messageActionsMenuElement)
@@ -190,7 +190,7 @@ export function createDummyMessageElement(document) {
  * @param {boolean} [includesUnsend=true]
  * @returns {HTMLDivElement}
  */
-export function createMessageActionsMenuElement(document, includesUnsend=true, eventsTimeout=0, includesReaction=false) {
+export function createMessageActionsMenuElement(document, includesUnsend=true, includesReaction=false) {
 	console.debug("createMessageActionsMenuElement", arguments)
 	const element = document.createElement("div")
 	element.setAttribute("role", "dialog")

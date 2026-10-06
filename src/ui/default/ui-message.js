@@ -243,7 +243,7 @@ class UIMessage extends UIComponent {
 				this.clickElementAndWaitFor(
 					actionButton,
 					this.root.ownerDocument.body,
-					(mutations) => {
+					() => {
 						return this.root.ownerDocument.querySelector("[role=menu]")
 					},
 					waitAbortController

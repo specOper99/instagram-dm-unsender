@@ -108,10 +108,9 @@ export function isSentByCurrentUser(element, window) {
  *
  * @param {Element} root - The scrollable messages wrapper
  * @param {AbortController} abortController
- * @param {Window} window
  * @returns {Element|undefined}
  */
-export function getFirstVisibleMessage(root, abortController, window) {
+export function getFirstVisibleMessage(root, abortController) {
 	const innerContainer = getMessagesInnerContainer(root)
 	if (!innerContainer) {
 		console.debug("getFirstVisibleMessage: no inner container found")

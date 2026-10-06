@@ -9,7 +9,6 @@ List of up and coming features.
 - [ ] i18n, make sure it works for all languages
 - [ ] l10n, make sure it works not only for the US version but also for the others.
 - [ ] alert system (for scenarios such as rate limits)
-- [ ] Remove reactions 
 
 ## Refused
 
