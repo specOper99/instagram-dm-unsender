@@ -225,7 +225,7 @@ class UIMessage extends UIComponent {
 	 * @returns {Promise}
 	 */
 	async openActionsMenu(actionButton, abortController) {
-		console.debug("Workflow step 2 : Clicking actionButton and waiting for unsend menu item to appear", actionButton)
+		console.debug("Workflow step 2 : Clicking actionButton and waiting for actions menu to appear", actionButton)
 		const waitAbortController = new AbortController()
 		let promiseTimeout
 		let resolveTimeout
@@ -238,36 +238,13 @@ class UIMessage extends UIComponent {
 		}
 		abortController.signal.addEventListener("abort", abortHandler)
 
-		/** Check if text matches any known "Unsend" variant */
-		const isUnsendText = (text) => {
-			const normalized = text.trim().toLocaleLowerCase()
-			return strings.UNSEND_TEXT_VARIANTS.some(v => normalized === v)
-		}
-
 		try {
-			const unsendButton = await Promise.race([
+			const actionsMenu = await Promise.race([
 				this.clickElementAndWaitFor(
 					actionButton,
 					this.root.ownerDocument.body,
 					(mutations) => {
-						if (mutations) {
-							const addedNodes = [...mutations.map(mutation => [...mutation.addedNodes])].flat().filter(node => node.nodeType === 1)
-							for (const addedNode of addedNodes) {
-								const node = [...addedNode.querySelectorAll("span,div")].find(node => isUnsendText(node.textContent) && node.firstChild?.nodeType === 3)
-								if (node) {
-									console.debug("Workflow step 2 : found unsend node via mutation", node)
-									return node
-								}
-							}
-						}
-						// Fallback: scan the whole document for an unsend menu item already present
-						const allSpans = this.root.ownerDocument.querySelectorAll("[role=menu] span, [role=menu] div, [role=menuitem] span, [role=menuitem] div")
-						for (const span of allSpans) {
-							if (isUnsendText(span.textContent) && span.firstChild?.nodeType === 3) {
-								console.debug("Workflow step 2 : found unsend node via document scan", span)
-								return span
-							}
-						}
+						return this.root.ownerDocument.querySelector("[role=menu]")
 					},
 					waitAbortController
 				),
@@ -276,13 +253,40 @@ class UIMessage extends UIComponent {
 				})
 			])
 
-			console.debug("Workflow step 2 : Found unsendButton", unsendButton)
-			return unsendButton
+			console.debug("Workflow step 2 : Found actions menu", actionsMenu)
+			return actionsMenu
 		} finally {
 			waitAbortController.abort() // Aborting without reason because the reason is the error itself
 			clearTimeout(promiseTimeout)
 			abortController.signal.removeEventListener("abort", abortHandler)
 		}
+	}
+
+	/**
+	 * Find an exact text match among the currently open message actions.
+	 *
+	 * @param {string[]} variants
+	 * @returns {Element|null}
+	 */
+	findActionMenuItem(variants) {
+		const items = this.root.ownerDocument.querySelectorAll("[role=menuitem]")
+		return [...items].find(item => variants.includes(item.textContent.trim().toLocaleLowerCase())) || null
+	}
+
+	/**
+	 * Click a menu action and wait for the menu to close.
+	 *
+	 * @param {Element} menuItem
+	 * @param {AbortController} abortController
+	 * @returns {Promise}
+	 */
+	clickActionMenuItem(menuItem, abortController) {
+		return this.clickElementAndWaitFor(
+			menuItem,
+			this.root.ownerDocument.body,
+			() => this.root.ownerDocument.querySelector("[role=menu]") === null,
+			abortController
+		)
 	}
 
 	/**

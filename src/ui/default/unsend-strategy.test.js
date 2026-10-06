@@ -39,12 +39,18 @@ test("DefaultStrategy reset", t => {
 	// Simulate some state
 	strategy._allPagesLoaded = true
 	strategy._unsentCount = 5
+	strategy._processedCount = 7
+	strategy._reactionRemovedCount = 2
+	strategy._lastBatchWaitCount = 10
 	strategy._lastUnsendDate = new Date()
 	strategy._pagesLoadedCount = 3
 	strategy._consecutiveFailures = 2
 	strategy.reset()
 	t.is(strategy._allPagesLoaded, false)
 	t.is(strategy._unsentCount, 0)
+	t.is(strategy._processedCount, 0)
+	t.is(strategy._reactionRemovedCount, 0)
+	t.is(strategy._lastBatchWaitCount, 0)
 	t.is(strategy._lastUnsendDate, null)
 	t.is(strategy._pagesLoadedCount, 0)
 	t.is(strategy._consecutiveFailures, 0)
@@ -70,6 +76,9 @@ test("DefaultStrategy constructor initializes all fields", t => {
 	const strategy = new DefaultStrategy(t.context.idmu)
 	t.is(strategy._allPagesLoaded, false)
 	t.is(strategy._unsentCount, 0)
+	t.is(strategy._processedCount, 0)
+	t.is(strategy._reactionRemovedCount, 0)
+	t.is(strategy._lastBatchWaitCount, 0)
 	t.is(strategy._pagesLoadedCount, 0)
 	t.is(strategy._running, false)
 	t.is(strategy._abortController, null)

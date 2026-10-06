@@ -4,6 +4,21 @@
 import IDMU from "../../idmu/idmu.js"
 import { UnsendStrategy } from "../unsend-strategy.js"
 
+const BATCH_SIZE = 10
+const BATCH_WAIT_MS = 30_000
+
+function waitForBatch(signal) {
+	return new Promise(resolve => {
+		const finish = () => {
+			clearTimeout(timeout)
+			signal.removeEventListener("abort", finish)
+			resolve()
+		}
+		const timeout = setTimeout(finish, BATCH_WAIT_MS)
+		signal.addEventListener("abort", finish, { once: true })
+	})
+}
+
 /**
  * Loads all pages first, then unsends messages from bottom to top.
  * For short conversations (all messages fit in viewport), skips page loading entirely.
@@ -17,6 +32,9 @@ class DefaultStrategy extends UnsendStrategy {
 		super(idmu)
 		this._allPagesLoaded = false
 		this._unsentCount = 0
+		this._processedCount = 0
+		this._reactionRemovedCount = 0
+		this._lastBatchWaitCount = 0
 		this._pagesLoadedCount = 0
 		this._running = false
 		this._abortController = null
@@ -40,6 +58,9 @@ class DefaultStrategy extends UnsendStrategy {
 	reset() {
 		this._allPagesLoaded = false
 		this._unsentCount = 0
+		this._processedCount = 0
+		this._reactionRemovedCount = 0
+		this._lastBatchWaitCount = 0
 		this._lastUnsendDate = null
 		this._pagesLoadedCount = 0
 		this._consecutiveFailures = 0
@@ -52,6 +73,9 @@ class DefaultStrategy extends UnsendStrategy {
 	async run() {
 		console.debug("DefaultStrategy.run()")
 		this._unsentCount = 0
+		this._processedCount = 0
+		this._reactionRemovedCount = 0
+		this._lastBatchWaitCount = 0
 		this._pagesLoadedCount = 0
 		this._consecutiveFailures = 0
 		this._running = true
@@ -59,6 +83,9 @@ class DefaultStrategy extends UnsendStrategy {
 		// Clear stale ignore markers from previous runs so messages can be retried
 		this.idmu.window.document.querySelectorAll("[data-idmu-ignore]").forEach(el => {
 			el.removeAttribute("data-idmu-ignore")
+		})
+		this.idmu.window.document.querySelectorAll("[data-idmu-processed]").forEach(el => {
+			el.removeAttribute("data-idmu-processed")
 		})
 		this.idmu.loadUIPI()
 		try {
@@ -71,7 +98,7 @@ class DefaultStrategy extends UnsendStrategy {
 			// Race condition: on first page load, Instagram's React may not have
 			// finished hydrating message components (role attributes missing).
 			// If we found nothing, wait and re-scan up to 3 times.
-			if (this._unsentCount === 0 && !this._abortController.signal.aborted) {
+			if (this._processedCount === 0 && !this._abortController.signal.aborted) {
 				for (let retry = 1; retry <= 3; retry++) {
 					this.idmu.setStatusText(`No messages detected, retrying (${retry}/3)...`)
 					console.debug(`DefaultStrategy: 0 messages found, retry ${retry}/3`)
@@ -83,17 +110,20 @@ class DefaultStrategy extends UnsendStrategy {
 					this.idmu.window.document.querySelectorAll("[data-idmu-ignore]").forEach(el => {
 						el.removeAttribute("data-idmu-ignore")
 					})
+					this.idmu.window.document.querySelectorAll("[data-idmu-processed]").forEach(el => {
+						el.removeAttribute("data-idmu-processed")
+					})
 					this.idmu.loadUIPI()
 					await this.#loadNextPage()
-					if (this._unsentCount > 0 || this._abortController.signal.aborted) break
+					if (this._processedCount > 0 || this._abortController.signal.aborted) break
 				}
 			}
 
 			if (this._abortController.signal.aborted) {
-				this.idmu.setStatusText(`Aborted. ${this._unsentCount} message(s) unsent.`)
+				this.idmu.setStatusText(`Aborted. ${this._unsentCount} message(s) unsent, ${this._reactionRemovedCount} reaction(s) removed.`)
 				console.debug("DefaultStrategy aborted")
 			} else {
-				this.idmu.setStatusText(`Done. ${this._unsentCount} message(s) unsent.`)
+				this.idmu.setStatusText(`Done. ${this._unsentCount} message(s) unsent, ${this._reactionRemovedCount} reaction(s) removed.`)
 				console.debug("DefaultStrategy done")
 			}
 		} catch (ex) {
@@ -134,7 +164,7 @@ class DefaultStrategy extends UnsendStrategy {
 	}
 
 	/**
-	 * Unsend first message in viewport.
+	 * Process the first message in the viewport.
 	 * Uses adaptive delays: fast baseline (1-2s) with exponential backoff on rate limit detection.
 	 */
 	async #unsendNextMessage() {
@@ -154,7 +184,7 @@ class DefaultStrategy extends UnsendStrategy {
 			const uipiMessage = await this.idmu.getNextUIPIMessage(this._abortController)
 			canScroll = uipiMessage !== false
 			if (uipiMessage) {
-				this.idmu.setStatusText(`Unsending message... (${this._unsentCount + 1})`)
+				this.idmu.setStatusText(`Processing message... (${this._processedCount + 1})`)
 
 				// Adaptive delay: 1-2s randomized baseline between unsends
 				if (this._lastUnsendDate !== null) {
@@ -170,9 +200,9 @@ class DefaultStrategy extends UnsendStrategy {
 				if (this._abortController.signal.aborted) return
 
 				msgElement = uipiMessage.uiMessage.root
-				const unsent = await uipiMessage.unsend(this._abortController)
+				const result = await uipiMessage.process(this._abortController)
 
-				if (unsent) {
+				if (result.unsent) {
 					// Verify the message actually disappeared from DOM (server accepted the mutation)
 					await new Promise(resolve => setTimeout(resolve, 800))
 					const stillInDOM = msgElement.isConnected && !msgElement.hasAttribute("data-idmu-unsent")
@@ -187,12 +217,19 @@ class DefaultStrategy extends UnsendStrategy {
 					} else {
 						this._lastUnsendDate = new Date()
 						this._unsentCount++
+						this._processedCount++
+						this._reactionRemovedCount += Number(result.reactionRemoved)
 						this._consecutiveFailures = 0
 						// DOM shrunk after removal; reset scroll for fresh scan
 						if (this.idmu.uipi && this.idmu.uipi.ui) {
 							this.idmu.uipi.ui.lastScrollTop = null
 						}
 					}
+				} else if (result.processed) {
+					this._lastUnsendDate = new Date()
+					this._processedCount++
+					this._reactionRemovedCount += Number(result.reactionRemoved)
+					this._consecutiveFailures = 0
 				} else {
 					// Unsend workflow returned false — allow retry on next pass
 					console.debug("DefaultStrategy: unsend returned false, removing ignore marker for retry")
@@ -211,6 +248,11 @@ class DefaultStrategy extends UnsendStrategy {
 			this.idmu.setStatusText(`Workflow failed (${this._consecutiveFailures}/5), retrying in ${(backoffMs / 1000).toFixed(0)}s... (${this._unsentCount} unsent)`)
 			await new Promise(resolve => setTimeout(resolve, backoffMs))
 		} finally {
+			if (this._processedCount - this._lastBatchWaitCount >= BATCH_SIZE && this._abortController && !this._abortController.signal.aborted) {
+				this._lastBatchWaitCount = this._processedCount
+				this.idmu.setStatusText(`Batch complete. Waiting ${BATCH_WAIT_MS / 1000}s before continuing...`)
+				await waitForBatch(this._abortController.signal)
+			}
 			if (canScroll && this._abortController && !this._abortController.signal.aborted) {
 				await this.#unsendNextMessage()
 			}

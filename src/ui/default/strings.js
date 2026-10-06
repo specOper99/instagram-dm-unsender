@@ -1,5 +1,6 @@
 export {
 	UNSEND_TEXT_VARIANTS,
+	REMOVE_REACTION_TEXT_VARIANTS,
 	LABEL_PATTERNS
 }
 
@@ -13,6 +14,12 @@ const UNSEND_TEXT_VARIANTS = [
 	"zurücknehmen",  // German
 ]
 
+/** Locale-independent patterns for removing the current user's reaction */
+const REMOVE_REACTION_TEXT_VARIANTS = [
+	"remove reaction",
+	"remove your reaction",
+]
+
 
 /** Represents the description text that is associated with the "..." button that reveals the actions menu */
 const LABEL_PATTERNS = [
@@ -24,4 +31,3 @@ const LABEL_PATTERNS = [
 	"[aria-label*='opciones']",
 	"[aria-label*='options']",
 ]
-

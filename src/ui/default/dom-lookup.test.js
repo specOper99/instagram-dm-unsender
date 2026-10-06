@@ -21,11 +21,11 @@ test("getFirstVisibleMessage ignore if already processed", async t => {
 	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController(), t.context.window), undefined)
 })
 
-test("getFirstVisibleMessage ignore if sent by someone else", async t => {
+test("getFirstVisibleMessage includes messages sent by someone else", async t => {
 	const messageElement = createMessageElement(t.context.document, "Test", false, true)
 	t.context.mountElement.append(messageElement)
 	messageElement.getBoundingClientRect = () => ({ y: 105, height: 50 })
-	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController(), t.context.window), undefined)
+	t.is(await getFirstVisibleMessage(t.context.document.body, new AbortController(), t.context.window), messageElement)
 })
 
 test("getFirstVisibleMessage tall message partially visible", async t => {

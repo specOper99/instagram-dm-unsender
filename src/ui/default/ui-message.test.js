@@ -78,7 +78,8 @@ test("UIMessage workflow", async t => {
 	t.context.mountElement.append(uiMessage.root)
 	await uiMessage.showActionsMenuButton(new AbortController())
 	const actionButton = uiMessage.root.querySelector("[aria-label]")
-	const unsendButton = await uiMessage.openActionsMenu(actionButton, new AbortController())
+	await uiMessage.openActionsMenu(actionButton, new AbortController())
+	const unsendButton = uiMessage.findActionMenuItem(["unsend"])
 	const dialogButton = await uiMessage.openConfirmUnsendModal(unsendButton, new AbortController())
 	// TODO replace with mock
 	t.deepEqual(dialogButton, t.context.document.querySelector("[role=dialog] button"))
@@ -91,7 +92,8 @@ test("UIMessage batch workflow", async t => {
 		t.context.mountElement.append(uiMessage.root)
 		await uiMessage.showActionsMenuButton(new AbortController())
 		const actionButton = uiMessage.root.querySelector("[aria-label]")
-		const unsendButton = await uiMessage.openActionsMenu(actionButton, new AbortController())
+		await uiMessage.openActionsMenu(actionButton, new AbortController())
+		const unsendButton = uiMessage.findActionMenuItem(["unsend"])
 		const dialogButton = await uiMessage.openConfirmUnsendModal(unsendButton, new AbortController())
 		t.deepEqual(dialogButton, t.context.document.querySelector("[role=dialog] button"))
 	}

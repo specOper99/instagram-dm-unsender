@@ -13,13 +13,15 @@ The default UI is the first and default workflow and unsend strategy.
      2. Open action menu:
         Click the three dots button to open the message actions.
 
-     3. Open unsend confirm modal:
-        Click the "Unsend" action button, a modal will open with a dialog that asks the user to confirm the intent.
+     3. Remove a reaction if present:
+        Click "Remove reaction" in the actions menu.
 
-     4. Click "confirm":
-        Click the "confirm" button inside the modal.
+     4. Unsend authored messages:
+        Click "Unsend", then confirm in the dialog. Messages without an applicable action are skipped.
         
 > There is no concurrency. Messages are unsent one after the other by using a queue.
+
+The workflow processes messages sequentially and waits 30 seconds after every 10 processed messages, in addition to the randomized delay between messages.
 
 ## Why are messages unsent one after another? 
 

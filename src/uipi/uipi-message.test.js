@@ -29,3 +29,13 @@ test("UIMessage batch unsend", async t => {
 		t.is(t.context.mountElement.contains(uiMessage.root), false)
 	}
 })
+
+test("UIPIMessage removes reactions from received messages", async t => {
+	const messageElement = createMessageElement(t.context.document, "Incoming", false, false, 0, true)
+	const uiMessage = new UIMessage(messageElement)
+	t.context.mountElement.append(uiMessage.root)
+	const uipiMessage = new UIPIMessage(uiMessage)
+	const result = await uipiMessage.process(new AbortController())
+	t.deepEqual(result, { processed: true, unsent: false, reactionRemoved: true })
+	t.true(uiMessage.root.hasAttribute("data-idmu-processed"))
+})

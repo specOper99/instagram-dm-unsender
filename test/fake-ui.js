@@ -112,7 +112,7 @@ export function createMessagesWrapperElement(document, totalPages=0, itemsPerPag
  * @param {number} [eventsTimeout=0]
  * @returns {HTMLDivElement}
  */
-export function createMessageElement(document, text="", includesUnsend=true, ignored=false, eventsTimeout=0) {
+export function createMessageElement(document, text="", includesUnsend=true, ignored=false, eventsTimeout=0, includesReaction=false) {
 	console.debug("createMessageElement", arguments)
 	const element = document.createElement("div")
 	if(ignored) {
@@ -145,7 +145,7 @@ export function createMessageElement(document, text="", includesUnsend=true, ign
 						element.messageActionsMenuElement.remove()
 						delete element.messageActionsMenuElement
 					} else {
-						const messageActionsMenuElement = createMessageActionsMenuElement(document, includesUnsend, eventsTimeout)
+						const messageActionsMenuElement = createMessageActionsMenuElement(document, includesUnsend, eventsTimeout, includesReaction)
 						messageActionsMenuElement.messageElement = element
 						element.messageActionsMenuElement = messageActionsMenuElement
 						element.ownerDocument.body.appendChild(messageActionsMenuElement)
@@ -190,7 +190,7 @@ export function createDummyMessageElement(document) {
  * @param {boolean} [includesUnsend=true]
  * @returns {HTMLDivElement}
  */
-export function createMessageActionsMenuElement(document, includesUnsend=true) {
+export function createMessageActionsMenuElement(document, includesUnsend=true, eventsTimeout=0, includesReaction=false) {
 	console.debug("createMessageActionsMenuElement", arguments)
 	const element = document.createElement("div")
 	element.setAttribute("role", "dialog")
@@ -206,6 +206,16 @@ export function createMessageActionsMenuElement(document, includesUnsend=true) {
 	menuElement.appendChild(menuItem1)
 	menuElement.appendChild(menuItem2)
 	element.appendChild(menuElement)
+	if(includesReaction) {
+		const removeReactionElement = document.createElement("div")
+		removeReactionElement.setAttribute("role", "menuitem")
+		removeReactionElement.textContent = "Remove reaction"
+		menuElement.appendChild(removeReactionElement)
+		removeReactionElement.addEventListener("click", () => {
+			element.messageElement.messageActionsMenuElement = null
+			element.remove()
+		})
+	}
 	if(includesUnsend) {
 		const unsendElement = document.createElement("div")
 		unsendElement.setAttribute("role", "menuitem")

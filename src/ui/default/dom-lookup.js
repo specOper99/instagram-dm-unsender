@@ -104,7 +104,7 @@ export function isSentByCurrentUser(element, window) {
 }
 
 /**
- * Gets the first visible message sent by the current user that hasn't been processed yet.
+ * Gets the first visible message that hasn't been processed yet.
  *
  * @param {Element} root - The scrollable messages wrapper
  * @param {AbortController} abortController
@@ -122,10 +122,10 @@ export function getFirstVisibleMessage(root, abortController, window) {
 		.filter(d => {
 			if (d.hasAttribute("data-idmu-ignore")) return false
 			if (d.hasAttribute("data-idmu-unsent")) return false
+			if (d.hasAttribute("data-idmu-processed")) return false
 			// Must contain message content indicators
 			const hasMessageContent = d.querySelector("[role=none]") || d.querySelector("[role=presentation]")
-			if (!hasMessageContent) return false
-			return isSentByCurrentUser(d, window)
+			return Boolean(hasMessageContent)
 		})
 
 	elements.reverse()
